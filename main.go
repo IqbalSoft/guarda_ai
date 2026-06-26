@@ -67,15 +67,24 @@ func onReady() {
 	systray.AddMenuItem("────────────────────────", "").Disable()
 
 	// --- SETTINGS SUBMENU ---
-	mSettings := systray.AddMenuItem("Settings", "Configure Z.ai GLM")
-	mZaiVisibility := mSettings.AddSubMenuItem("[x] Z.ai GLM", "Show in tray")
-	mZaiAPIKey := mSettings.AddSubMenuItem("Edit API Key", "Update your token")
-	mSettingsSep := mSettings.AddSubMenuItem("────────────────────────", "")
-	mSettingsSep.Disable()
+	mSettings := systray.AddMenuItem("Settings", "Configure plugins")
+	mPluginsMenu := mSettings.AddSubMenuItem("Plugins", "")
+
+	mZaiVisibility, mZaiAPIKey := createPluginSettingsRow(mPluginsMenu, "Z.ai GLM", true)
+	mClaudeVisibility, _ := createPluginSettingsRow(mPluginsMenu, "Claude", false)
+	mChatGPTVisibility, _ := createPluginSettingsRow(mPluginsMenu, "ChatGPT", false)
+	mDeepseekVisibility, _ := createPluginSettingsRow(mPluginsMenu, "Deepseek", false)
+	mGeminiVisibility, _ := createPluginSettingsRow(mPluginsMenu, "Gemini", false)
+	mKimiVisibility, _ := createPluginSettingsRow(mPluginsMenu, "Kimi", false)
 
 	go func() {
 		cfg := loadConfig()
-		updateZaiVisibilityLabel(mZaiVisibility, cfg.Zai.Enabled)
+		updatePluginSettingsState(mZaiVisibility, mZaiAPIKey, "Z.ai GLM", cfg.Zai.Enabled, cfg.Zai.APIKey, true)
+		updatePluginSettingsState(mClaudeVisibility, nil, "Claude", cfg.Claude.Enabled, "", false)
+		updatePluginSettingsState(mChatGPTVisibility, nil, "ChatGPT", cfg.ChatGPT.Enabled, "", false)
+		updatePluginSettingsState(mDeepseekVisibility, nil, "Deepseek", cfg.Deepseek.Enabled, "", false)
+		updatePluginSettingsState(mGeminiVisibility, nil, "Gemini", cfg.Gemini.Enabled, "", false)
+		updatePluginSettingsState(mKimiVisibility, nil, "Kimi", cfg.Kimi.Enabled, "", false)
 
 		for {
 			select {
@@ -83,7 +92,42 @@ func onReady() {
 				currentCfg := loadConfig()
 				currentCfg.Zai.Enabled = !currentCfg.Zai.Enabled
 				saveConfig(currentCfg)
-				updateZaiVisibilityLabel(mZaiVisibility, currentCfg.Zai.Enabled)
+				updatePluginSettingsState(mZaiVisibility, mZaiAPIKey, "Z.ai GLM", currentCfg.Zai.Enabled, currentCfg.Zai.APIKey, true)
+				refreshAllData()
+
+			case <-mClaudeVisibility.ClickedCh:
+				currentCfg := loadConfig()
+				currentCfg.Claude.Enabled = !currentCfg.Claude.Enabled
+				saveConfig(currentCfg)
+				updatePluginSettingsState(mClaudeVisibility, nil, "Claude", currentCfg.Claude.Enabled, "", false)
+				refreshAllData()
+
+			case <-mChatGPTVisibility.ClickedCh:
+				currentCfg := loadConfig()
+				currentCfg.ChatGPT.Enabled = !currentCfg.ChatGPT.Enabled
+				saveConfig(currentCfg)
+				updatePluginSettingsState(mChatGPTVisibility, nil, "ChatGPT", currentCfg.ChatGPT.Enabled, "", false)
+				refreshAllData()
+
+			case <-mDeepseekVisibility.ClickedCh:
+				currentCfg := loadConfig()
+				currentCfg.Deepseek.Enabled = !currentCfg.Deepseek.Enabled
+				saveConfig(currentCfg)
+				updatePluginSettingsState(mDeepseekVisibility, nil, "Deepseek", currentCfg.Deepseek.Enabled, "", false)
+				refreshAllData()
+
+			case <-mGeminiVisibility.ClickedCh:
+				currentCfg := loadConfig()
+				currentCfg.Gemini.Enabled = !currentCfg.Gemini.Enabled
+				saveConfig(currentCfg)
+				updatePluginSettingsState(mGeminiVisibility, nil, "Gemini", currentCfg.Gemini.Enabled, "", false)
+				refreshAllData()
+
+			case <-mKimiVisibility.ClickedCh:
+				currentCfg := loadConfig()
+				currentCfg.Kimi.Enabled = !currentCfg.Kimi.Enabled
+				saveConfig(currentCfg)
+				updatePluginSettingsState(mKimiVisibility, nil, "Kimi", currentCfg.Kimi.Enabled, "", false)
 				refreshAllData()
 
 			case <-mZaiAPIKey.ClickedCh:
@@ -96,6 +140,7 @@ func onReady() {
 				if err == nil {
 					currentCfg.Zai.APIKey = newKey
 					saveConfig(currentCfg)
+					updatePluginSettingsState(mZaiVisibility, mZaiAPIKey, "Z.ai GLM", currentCfg.Zai.Enabled, currentCfg.Zai.APIKey, true)
 					refreshAllData()
 				}
 			}
@@ -133,18 +178,39 @@ func onReady() {
 	}()
 }
 
-func updateZaiVisibilityLabel(item *systray.MenuItem, enabled bool) {
+func createPluginSettingsRow(parent *systray.MenuItem, title string, hasApiKeyAction bool) (*systray.MenuItem, *systray.MenuItem) {
+	toggle := parent.AddSubMenuItem("[ ] "+title, "Show in tray")
+
+	var action *systray.MenuItem
+	if hasApiKeyAction {
+		action = parent.AddSubMenuItem("Edit API Key", "Update your token")
+	}
+
+	return toggle, action
+}
+
+func updatePluginSettingsState(toggle, action *systray.MenuItem, title string, enabled bool, apiKey string, hasApiKeyAction bool) {
 	if enabled {
-		item.SetTitle("[x] Z.ai GLM")
+		toggle.SetTitle("[x] " + title)
 	} else {
-		item.SetTitle("[ ] Z.ai GLM")
+		toggle.SetTitle("[ ] " + title)
+	}
+
+	if action != nil && hasApiKeyAction {
+		if enabled {
+			action.Show()
+			action.Enable()
+		} else {
+			action.Hide()
+			action.Disable()
+		}
 	}
 }
 
 func createSubGroup(parent *systray.MenuItem, title string) (*systray.MenuItem, *systray.MenuItem, *systray.MenuItem) {
 	h := parent.AddSubMenuItem(title, "")
 	h.Disable()
-	q := parent.AddSubMenuItem("    Quota: [Loading...]", "")
+	q := parent.AddSubMenuItem("Quota: [Loading...]", "")
 	q.Disable()
 	sep := parent.AddSubMenuItem("────────────────────────", "")
 	sep.Disable()

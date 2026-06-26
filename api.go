@@ -15,7 +15,7 @@ func fetchZaiUsage(m5H, m5HR, mWk, mWkR, mMo, mMoR *systray.MenuItem, cfg AIConf
 		return
 	}
 	if cfg.APIKey == "" {
-		m5H.SetTitle("    [Missing API Key]")
+		m5H.SetTitle("[Missing API Key]")
 		return
 	}
 
@@ -63,15 +63,15 @@ func fetchZaiUsage(m5H, m5HR, mWk, mWkR, mMo, mMoR *systray.MenuItem, cfg AIConf
 		}
 
 		switch {
-		case limit.Type == "TIME_LIMIT" && limit.Unit == 5:
+		case limit.Type == "TOKENS_LIMIT" && limit.Unit == 3:
 			pct5Hour = int(limit.Percentage)
 			reset5Hour = resetTimeStr
-		case limit.Type == "TOKENS_LIMIT" && limit.Unit == 3:
-			pctMonthly = int(limit.Percentage)
-			resetMonthly = resetTimeStr
 		case limit.Type == "TOKENS_LIMIT" && limit.Unit == 6:
 			pctWeekly = int(limit.Percentage)
 			resetWeekly = resetTimeStr
+		case limit.Type == "TIME_LIMIT" && limit.Unit == 5:
+			pctMonthly = int(limit.Percentage)
+			resetMonthly = resetTimeStr
 		}
 	}
 
@@ -88,11 +88,11 @@ func fetchGenericAI(name string, mBar *systray.MenuItem, cfg AIConfig) {
 		return
 	}
 	if cfg.APIKey == "" {
-		mBar.SetTitle("    [Missing API Key]")
+		mBar.SetTitle("✨ API key is waiting — set it in Settings")
 		return
 	}
 
 	// Placeholder logic until you add real API endpoints for these tools
 	mockPercentage := 25
-	mBar.SetTitle(fmt.Sprintf("    [%s] %d%% Used", generateBar(mockPercentage), mockPercentage))
+	mBar.SetTitle(fmt.Sprintf("[%s] %d%% Used", generateBar(mockPercentage), mockPercentage))
 }
